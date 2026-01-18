@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JF Wadi Group - Sistem Tempahan</title>
-    <link rel="icon" type="image/x-icon" href="jfwadigroupicon.png">
+    <title>JF Wadi Group - Sistem Tempahan Penginapan</title>
+    <link rel="icon" type="image/x-icon" href="jfwadigroup.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet">
@@ -344,7 +344,7 @@
                         </div>
                     </div>
                     <div id="capacity-warning" class="hidden mt-4 p-4 bg-red-50 border-2 border-red-300 rounded-xl">
-                        <div class="flex items-start gap-3"><span class="text-2xl">🚫</span>
+                        <div class="flex items-start gap-3"><span class="text-2xl">⚠️</span>
                             <div>
                                 <p class="font-bold text-red-800">Melebihi Had Kapasiti Unit</p>
                                 <p class="text-sm text-red-700 mt-1">Jumlah tetamu melebihi kapasiti unit ini. Sila
@@ -685,7 +685,8 @@
     <script>
         // ==================== GOOGLE SHEETS INTEGRATION ====================
         // 🔧 TUKAR URL INI DENGAN WEB APP URL ANDA DARI APPS SCRIPT
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbx1khSL2IUP_UDOlA5Ihqlnv5EhkqlJKng7oFxemslIs1bx6OWw5-d6C0zGFIVoPthLrw/exec';
+        // Contoh: 'https://script.google.com/macros/s/AKfycbxxx...xxx/exec'
+        const GOOGLE_SHEETS_URL = 'MASUKKAN_WEB_APP_URL_ANDA_DI_SINI';
 
         // ==================== DATA STORAGE ====================
         let allData = [];
@@ -746,16 +747,23 @@
             }
         }
 
-        // ==================== GOOGLE SHEETS FUNCTIONS ====================
+        // ==================== GOOGLE SHEETS FUNCTIONS (POST & GET dengan CORS) ====================
+
+        /**
+         * Fetch data dari Google Sheets menggunakan method GET
+         * Endpoint: ?action=getData
+         */
         async function fetchDataFromSheets() {
-            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes('YOUR_DEPLOYMENT_ID')) {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes('MASUKKAN_WEB_APP_URL')) {
                 console.log('⚠️ Google Sheets URL tidak dikonfigurasi');
                 return false;
             }
 
             try {
-                const response = await fetch(GOOGLE_SHEETS_URL, {
+                // Method GET dengan parameter action
+                const response = await fetch(`${GOOGLE_SHEETS_URL}?action=getData`, {
                     method: 'GET',
+                    redirect: 'follow'
                 });
 
                 const result = await response.json();
@@ -764,15 +772,134 @@
                     allData = result.data;
                     processData();
                     saveToLocalStorage();
-                    console.log('🌐 Database: Terhubung ke Google Sheets (Master)');
+                    console.log('✅ Data berjaya diambil dari Google Sheets (GET)');
                     return true;
                 } else {
-                    console.error('⚠️ Ralat API Google Sheets:', result.error);
+                    console.error('❌ Ralat dari Google Sheets:', result.error);
                     return false;
                 }
             } catch (error) {
                 console.error('❌ Ralat fetch data:', error);
                 return false;
+            }
+        }
+
+        /**
+         * Hantar data tempahan ke Google Sheets menggunakan method POST
+         * CORS-enabled untuk cross-origin requests
+         */
+        async function sendToGoogleSheets(bookingData) {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes('MASUKKAN_WEB_APP_URL')) {
+                console.log('⚠️ Google Sheets URL tidak dikonfigurasi. Data hanya disimpan di localStorage.');
+                return { success: true, message: 'Data disimpan di localStorage' };
+            }
+
+            try {
+                const sheetData = {
+                    action: 'addBooking',
+                    type: 'booking',
+                    __backendId: bookingData.__backendId,
+                    timestamp: new Date().toLocaleString('ms-MY', {
+                        timeZone: 'Asia/Kuala_Lumpur',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    }),
+                    created_at: bookingData.created_at,
+                    booking_id: bookingData.booking_id,
+                    guest_name: bookingData.guest_name,
+                    phone: bookingData.phone,
+                    occupation: bookingData.occupation,
+                    organization: bookingData.organization,
+                    age: bookingData.age,
+                    adults: bookingData.adults,
+                    children: bookingData.children,
+                    total_guests: bookingData.total_guests,
+                    vehicles: bookingData.vehicles,
+                    vehicle_plates: bookingData.vehicle_plates,
+                    address: bookingData.address,
+                    purpose: bookingData.purpose,
+                    referral: bookingData.referral || '-',
+                    unit_id: bookingData.unit_id,
+                    unit_name: bookingData.unit_name,
+                    check_in: bookingData.check_in,
+                    check_out: bookingData.check_out,
+                    nights: bookingData.nights,
+                    days: bookingData.days,
+                    promo_code: bookingData.promo_code || '-',
+                    total_price: bookingData.total_price,
+                    discount: bookingData.discount,
+                    final_price: bookingData.final_price,
+                    status: bookingData.status,
+                    deposit: bookingData.deposit,
+                    refund: bookingData.refund
+                };
+
+                // Method POST dengan JSON body dan CORS support
+                const response = await fetch(GOOGLE_SHEETS_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify(sheetData),
+                    redirect: 'follow'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('✅ Data berjaya dihantar ke Google Sheets (POST)');
+                    return { success: true, message: 'Data berjaya dihantar ke Google Sheets' };
+                } else {
+                    console.error('❌ Ralat dari Google Sheets:', result.error);
+                    return { success: false, message: result.error || 'Ralat menghantar data' };
+                }
+
+            } catch (error) {
+                console.error('❌ Ralat menghantar ke Google Sheets:', error);
+                return { success: false, message: 'Ralat: ' + error.message };
+            }
+        }
+
+        /**
+         * Sync semua data ke Google Sheets (untuk operasi bulk update)
+         * Method POST dengan action=syncData
+         */
+        async function syncDataToSheets() {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes('MASUKKAN_WEB_APP_URL')) {
+                console.log('⚠️ Google Sheets URL tidak dikonfigurasi');
+                return { success: false, message: 'URL tidak dikonfigurasi' };
+            }
+
+            try {
+                const response = await fetch(GOOGLE_SHEETS_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify({
+                        action: 'syncData',
+                        data: allData
+                    }),
+                    redirect: 'follow'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('✅ Data berjaya disync ke Google Sheets');
+                    return { success: true, message: 'Sync berjaya' };
+                } else {
+                    console.error('❌ Ralat sync:', result.error);
+                    return { success: false, message: result.error };
+                }
+
+            } catch (error) {
+                console.error('❌ Ralat sync data:', error);
+                return { success: false, message: 'Ralat: ' + error.message };
             }
         }
 
@@ -782,20 +909,18 @@
                 ...record,
                 __backendId: generateId()
             };
-            
-            if (GOOGLE_SHEETS_URL && !GOOGLE_SHEETS_URL.includes('YOUR_DEPLOYMENT_ID')) {
-                try {
-                    const response = await fetch(GOOGLE_SHEETS_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'create', data: newRecord })
-                    });
-                    await response.json();
-                } catch (e) { console.error("Sync error:", e); }
-            }
-
             allData.push(newRecord);
             processData();
             saveToLocalStorage();
+
+            // Sync to Google Sheets if it's a booking
+            if (record.type === 'booking') {
+                await sendToGoogleSheets(newRecord);
+            } else {
+                // For other records, sync all data
+                await syncDataToSheets();
+            }
+
             renderCurrentView();
             return { isOk: true, data: newRecord };
         }
@@ -803,18 +928,13 @@
         async function updateRecord(record) {
             const index = allData.findIndex(r => r.__backendId === record.__backendId);
             if (index !== -1) {
-                if (GOOGLE_SHEETS_URL && !GOOGLE_SHEETS_URL.includes('YOUR_DEPLOYMENT_ID')) {
-                    try {
-                        const response = await fetch(GOOGLE_SHEETS_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({ action: 'update', data: record })
-                        });
-                        await response.json();
-                    } catch (e) { console.error("Sync error:", e); }
-                }
                 allData[index] = record;
                 processData();
                 saveToLocalStorage();
+
+                // Sync updated data to Google Sheets
+                await syncDataToSheets();
+
                 renderCurrentView();
                 return { isOk: true };
             }
@@ -824,18 +944,13 @@
         async function deleteRecord(record) {
             const index = allData.findIndex(r => r.__backendId === record.__backendId);
             if (index !== -1) {
-                if (GOOGLE_SHEETS_URL && !GOOGLE_SHEETS_URL.includes('YOUR_DEPLOYMENT_ID')) {
-                    try {
-                        const response = await fetch(GOOGLE_SHEETS_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({ action: 'delete', data: record })
-                        });
-                        await response.json();
-                    } catch (e) { console.error("Sync error:", e); }
-                }
                 allData.splice(index, 1);
                 processData();
                 saveToLocalStorage();
+
+                // Sync updated data to Google Sheets
+                await syncDataToSheets();
+
                 renderCurrentView();
                 return { isOk: true };
             }
@@ -845,12 +960,12 @@
         // ==================== INITIALIZATION ====================
         async function initializeApp() {
             try {
-                // Try to fetch data from Google Sheets first
+                // Try to fetch data from Google Sheets first using GET
                 const sheetsLoaded = await fetchDataFromSheets();
 
                 // If Google Sheets fails, fallback to localStorage
                 if (!sheetsLoaded) {
-                    console.log('📦 Database: Menggunakan Local Storage (Offline/Fallback)');
+                    console.log('💾 Menggunakan localStorage sebagai fallback');
                     loadFromLocalStorage();
                 }
 
@@ -1321,7 +1436,7 @@
 👥 *Tetamu:* ${bookingData.total_guests} orang (${bookingData.adults} dewasa, ${bookingData.children} kanak-kanak)
 🚗 *Kenderaan:* ${bookingData.vehicles} (${bookingData.vehicle_plates})
 🏡 *Alamat:* ${bookingData.address}
-📝 *Tujuan:* ${bookingData.purpose}
+🎯 *Tujuan:* ${bookingData.purpose}
 
 💰 *Harga:* RM ${bookingData.final_price.toFixed(2)}
 ${bookingData.promo_code ? `🎟️ *Kod Promo:* ${bookingData.promo_code} (Diskaun: RM ${bookingData.discount.toFixed(2)})` : ''}
@@ -1892,7 +2007,11 @@ Sila sahkan tempahan ini.`;
 
                 return `
           <tr class="hover:bg-gray-50">
-            <td class="px-4 py-3 font-mono text-xs">${b.booking_id}</td>
+            <td class="px-4 py-3">
+              <button onclick="showGuestDetailsModal('${b.__backendId}')" class="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                ${b.booking_id}
+              </button>
+            </td>
             <td class="px-4 py-3">
               <span class="px-2 py-1 rounded-full text-xs font-medium ${statusColors[b.status] || 'bg-gray-100'}">${b.status}</span>
             </td>
@@ -2049,6 +2168,203 @@ Sila sahkan tempahan ini.`;
             } else {
                 showToast('Ralat memadam tempahan', 'error');
             }
+        }
+
+        function showGuestDetailsModal(bookingId) {
+            const booking = bookings.find(b => b.__backendId === bookingId);
+            if (!booking) return;
+
+            const checkInDate = new Date(booking.check_in);
+            const checkOutDate = new Date(booking.check_out);
+            const isFriday = checkOutDate.getDay() === 5;
+            const checkOutTime = isFriday ? '11:00 pagi' : '12:00 tengahari';
+
+            const statusColors = {
+                'Belum Disahkan': 'bg-yellow-100 text-yellow-700 border-yellow-300',
+                'Disahkan': 'bg-green-100 text-green-700 border-green-300',
+                'Ditolak': 'bg-red-100 text-red-700 border-red-300'
+            };
+
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-overlay';
+            modal.innerHTML = `
+        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="sticky top-0 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-6 rounded-t-2xl">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-2xl font-bold mb-2">📋 Maklumat Lengkap Tempahan</h3>
+                <p class="text-emerald-100 text-sm">ID: ${booking.booking_id}</p>
+              </div>
+              <button onclick="this.closest('.modal-overlay').remove()" class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-lg transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-6">
+            <!-- Status Badge -->
+            <div class="flex justify-center">
+              <span class="px-6 py-3 rounded-xl text-base font-bold border-2 ${statusColors[booking.status] || 'bg-gray-100 text-gray-700 border-gray-300'}">
+                ${booking.status}
+              </span>
+            </div>
+
+            <!-- Guest Information -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
+              <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                <span class="text-2xl">👤</span> Maklumat Tetamu
+              </h4>
+              <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Nama Penuh:</span>
+                  <span class="font-semibold text-gray-800">${booking.guest_name}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">No. Telefon:</span>
+                  <span class="font-semibold text-gray-800">${booking.phone}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Umur:</span>
+                  <span class="font-semibold text-gray-800">${booking.age} tahun</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Pekerjaan:</span>
+                  <span class="font-semibold text-gray-800">${booking.occupation}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3 md:col-span-2">
+                  <span class="text-gray-600 block mb-1">Organisasi:</span>
+                  <span class="font-semibold text-gray-800">${booking.organization}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3 md:col-span-2">
+                  <span class="text-gray-600 block mb-1">Alamat:</span>
+                  <span class="font-semibold text-gray-800">${booking.address}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Booking Details -->
+            <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border-2 border-emerald-200">
+              <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                <span class="text-2xl">🏠</span> Maklumat Tempahan
+              </h4>
+              <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Unit:</span>
+                  <span class="font-semibold text-gray-800">${booking.unit_name}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Tempoh:</span>
+                  <span class="font-semibold text-emerald-700">${booking.days} hari ${booking.nights} malam</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Daftar Masuk:</span>
+                  <span class="font-semibold text-gray-800">${formatDisplayDate(checkInDate)} (3:00 petang)</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Daftar Keluar:</span>
+                  <span class="font-semibold text-gray-800">${formatDisplayDate(checkOutDate)} (${checkOutTime})</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Jumlah Tetamu:</span>
+                  <span class="font-semibold text-gray-800">${booking.total_guests} orang (${booking.adults} dewasa, ${booking.children} kanak-kanak)</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Bilangan Kenderaan:</span>
+                  <span class="font-semibold text-gray-800">${booking.vehicles}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3 md:col-span-2">
+                  <span class="text-gray-600 block mb-1">Plat Kenderaan:</span>
+                  <span class="font-semibold text-gray-800">${booking.vehicle_plates}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3 md:col-span-2">
+                  <span class="text-gray-600 block mb-1">Tujuan Menginap:</span>
+                  <span class="font-semibold text-gray-800">${booking.purpose}</span>
+                </div>
+                ${booking.referral ? `
+                <div class="bg-white rounded-lg p-3 md:col-span-2">
+                  <span class="text-gray-600 block mb-1">Mengetahui Daripada:</span>
+                  <span class="font-semibold text-gray-800">${booking.referral}</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Payment Details -->
+            <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border-2 border-amber-200">
+              <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                <span class="text-2xl">💰</span> Maklumat Bayaran
+              </h4>
+              <div class="grid md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Harga Asal:</span>
+                  <span class="font-semibold text-gray-800">RM ${parseFloat(booking.total_price).toFixed(2)}</span>
+                </div>
+                ${booking.promo_code ? `
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Kod Promo:</span>
+                  <span class="font-semibold text-emerald-600">${booking.promo_code}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Diskaun:</span>
+                  <span class="font-semibold text-emerald-600">- RM ${parseFloat(booking.discount).toFixed(2)}</span>
+                </div>
+                ` : ''}
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Jumlah Bayaran:</span>
+                  <span class="font-bold text-emerald-700 text-lg">RM ${parseFloat(booking.final_price).toFixed(2)}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Deposit Dibayar:</span>
+                  <span class="font-semibold ${parseFloat(booking.deposit) >= parseFloat(booking.final_price) ? 'text-green-600' : 'text-orange-600'}">RM ${parseFloat(booking.deposit || 0).toFixed(2)}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Refund:</span>
+                  <span class="font-semibold text-gray-800">RM ${parseFloat(booking.refund || 0).toFixed(2)}</span>
+                </div>
+                <div class="bg-white rounded-lg p-3">
+                  <span class="text-gray-600 block mb-1">Baki:</span>
+                  <span class="font-bold ${(parseFloat(booking.final_price) - parseFloat(booking.deposit || 0) + parseFloat(booking.refund || 0)) > 0 ? 'text-red-600' : 'text-green-600'} text-lg">
+                    RM ${(parseFloat(booking.final_price) - parseFloat(booking.deposit || 0) + parseFloat(booking.refund || 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timestamp -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div class="flex items-center justify-between text-xs text-gray-600">
+                <span>📅 Tarikh Tempahan Dibuat:</span>
+                <span class="font-medium">${new Date(booking.created_at).toLocaleString('ms-MY', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-4 border-t-2 border-gray-200">
+              ${booking.status === 'Belum Disahkan' ? `
+                <button onclick="updateBookingStatus('${booking.__backendId}', 'Disahkan'); this.closest('.modal-overlay').remove();" class="flex-1 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition">
+                  ✅ Sahkan Tempahan
+                </button>
+                <button onclick="updateBookingStatus('${booking.__backendId}', 'Ditolak'); this.closest('.modal-overlay').remove();" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition">
+                  ❌ Tolak Tempahan
+                </button>
+              ` : ''}
+              <button onclick="showPaymentModal('${booking.__backendId}'); this.closest('.modal-overlay').remove();" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition">
+                💰 Kemaskini Bayaran
+              </button>
+              <button onclick="this.closest('.modal-overlay').remove()" class="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+            document.getElementById('modals-container').appendChild(modal);
         }
 
         // ==================== UNIT MANAGEMENT ====================
@@ -2221,37 +2537,95 @@ Sila sahkan tempahan ini.`;
 
             const specialDates = unit.special_dates ? JSON.parse(unit.special_dates) : {};
 
+            // Convert dates to ranges for better display
+            const specialRanges = [];
+            const processedDates = new Set();
+            const sortedDates = Object.keys(specialDates).sort();
+
+            sortedDates.forEach((date) => {
+                if (processedDates.has(date)) return;
+
+                let startDate = new Date(date);
+                let endDate = new Date(date);
+                const priceValue = parseFloat(specialDates[date]);
+
+                // Look for consecutive dates with same price
+                let nextDate = new Date(startDate);
+                nextDate.setDate(nextDate.getDate() + 1);
+                let nextDateKey = formatDateKey(nextDate);
+
+                while (specialDates[nextDateKey] && parseFloat(specialDates[nextDateKey]) === priceValue) {
+                    endDate = new Date(nextDate);
+                    processedDates.add(nextDateKey);
+                    nextDate.setDate(nextDate.getDate() + 1);
+                    nextDateKey = formatDateKey(nextDate);
+                }
+
+                specialRanges.push({
+                    start: formatDateKey(startDate),
+                    end: formatDateKey(endDate),
+                    price: priceValue
+                });
+
+                processedDates.add(date);
+            });
+
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 modal-overlay';
             modal.innerHTML = `
-        <div class="bg-white rounded-2xl max-w-md w-full p-6">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
           <h3 class="text-lg font-bold text-gray-800 mb-4">📅 Harga Khas - ${unit.unit_name}</h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Tarikh</label>
-              <input type="date" id="special-date" class="w-full p-3 border-2 border-gray-200 rounded-xl">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tarikh Mula</label>
+              <input type="date" id="special-date-start" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tarikh Akhir</label>
+              <input type="date" id="special-date-end" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Harga Khas (RM)</label>
-              <input type="number" id="special-price" min="0" step="0.01" class="w-full p-3 border-2 border-gray-200 rounded-xl" placeholder="200.00">
+              <input type="number" id="special-price" min="0" step="0.01" class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500" placeholder="200.00">
             </div>
-            <button onclick="addSpecialPrice('${unitId}')" class="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700">
-              + Tambah Harga Khas
+            <button onclick="addSpecialPriceRange('${unitId}')" class="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition">
+              ➕ Tambah Julat Harga Khas
             </button>
 
-            <div class="max-h-40 overflow-y-auto">
-              <h4 class="text-sm font-medium text-gray-700 mb-2">Senarai Harga Khas:</h4>
-              <div id="special-dates-list" class="space-y-2">
-                ${Object.entries(specialDates).map(([date, price]) => `
-                  <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg text-sm">
-                    <span>${formatDisplayDate(new Date(date))}: RM ${parseFloat(price).toFixed(2)}</span>
-                    <button onclick="removeSpecialPrice('${unitId}', '${date}')" class="text-red-500 hover:text-red-700">✗</button>
+            <div>
+              <h4 class="text-sm font-medium text-gray-700 mb-2">📋 Senarai Harga Khas:</h4>
+              <div id="special-dates-list" class="space-y-2 max-h-64 overflow-y-auto">
+                ${specialRanges.length > 0 ? specialRanges.map((range) => {
+                const isSingleDay = range.start === range.end;
+                const days = Math.ceil((new Date(range.end) - new Date(range.start)) / (1000 * 60 * 60 * 24)) + 1;
+                return `
+                  <div class="flex justify-between items-start bg-gradient-to-r from-emerald-50 to-blue-50 p-3 rounded-lg text-sm border-2 border-emerald-200 hover:shadow-md transition">
+                    <div class="flex-1">
+                      <div class="font-medium text-gray-800 mb-1">
+                        ${isSingleDay ?
+                        `📅 ${formatDisplayDate(new Date(range.start))}` :
+                        `📅 ${formatDisplayDate(new Date(range.start))} ➜ ${formatDisplayDate(new Date(range.end))}`
+                    }
+                      </div>
+                      <div class="text-emerald-700 font-bold text-base">
+                        💰 RM ${range.price.toFixed(2)}
+                      </div>
+                      ${!isSingleDay ? `<div class="text-xs text-gray-600 mt-1">
+                        ⏱️ ${days} hari
+                      </div>` : ''}
+                    </div>
+                    <button onclick="removeSpecialPriceRange('${unitId}', '${range.start}', '${range.end}')" 
+                      class="text-red-500 hover:text-red-700 hover:bg-red-100 p-2 rounded-lg transition ml-2" 
+                      title="Padam julat ini">
+                      🗑️
+                    </button>
                   </div>
-                `).join('') || '<p class="text-gray-500 text-sm">Tiada harga khas</p>'}
+                `;
+            }).join('') : '<p class="text-gray-500 text-sm p-4 text-center bg-gray-50 rounded-lg">📭 Tiada harga khas ditetapkan</p>'}
               </div>
             </div>
 
-            <button onclick="this.closest('.modal-overlay').remove()" class="w-full py-3 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300">
+            <button onclick="this.closest('.modal-overlay').remove()" class="w-full py-3 bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition">
               Tutup
             </button>
           </div>
@@ -2260,20 +2634,36 @@ Sila sahkan tempahan ini.`;
             document.getElementById('modals-container').appendChild(modal);
         }
 
-        async function addSpecialPrice(unitId) {
+        async function addSpecialPriceRange(unitId) {
             const unit = units.find(u => u.__backendId === unitId);
             if (!unit) return;
 
-            const date = document.getElementById('special-date').value;
+            const startDate = document.getElementById('special-date-start').value;
+            const endDate = document.getElementById('special-date-end').value;
             const price = document.getElementById('special-price').value;
 
-            if (!date || !price) {
-                showToast('Sila masukkan tarikh dan harga', 'error');
+            if (!startDate || !endDate || !price) {
+                showToast('Sila lengkapkan tarikh mula, tarikh akhir dan harga', 'error');
+                return;
+            }
+
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            if (start > end) {
+                showToast('Tarikh mula mesti lebih awal dari tarikh akhir', 'error');
                 return;
             }
 
             const specialDates = unit.special_dates ? JSON.parse(unit.special_dates) : {};
-            specialDates[date] = parseFloat(price);
+
+            // Add all dates in the range
+            let currentDate = new Date(start);
+            while (currentDate <= end) {
+                const dateKey = formatDateKey(currentDate);
+                specialDates[dateKey] = parseFloat(price);
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
 
             setLoading(true);
             const result = await updateRecord({
@@ -2285,18 +2675,29 @@ Sila sahkan tempahan ini.`;
             if (result.isOk) {
                 document.querySelector('.modal-overlay').remove();
                 showSpecialPriceModal(unitId);
-                showToast('Harga khas berjaya ditambah', 'success');
+                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                showToast(`✅ Harga khas ${days} hari berjaya ditambah`, 'success');
             } else {
                 showToast('Ralat menambah harga khas', 'error');
             }
         }
 
-        async function removeSpecialPrice(unitId, date) {
+        async function removeSpecialPriceRange(unitId, startDate, endDate) {
             const unit = units.find(u => u.__backendId === unitId);
             if (!unit) return;
 
             const specialDates = unit.special_dates ? JSON.parse(unit.special_dates) : {};
-            delete specialDates[date];
+
+            // Remove all dates in the range
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            let currentDate = new Date(start);
+
+            while (currentDate <= end) {
+                const dateKey = formatDateKey(currentDate);
+                delete specialDates[dateKey];
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
 
             setLoading(true);
             const result = await updateRecord({
@@ -2308,7 +2709,7 @@ Sila sahkan tempahan ini.`;
             if (result.isOk) {
                 document.querySelector('.modal-overlay').remove();
                 showSpecialPriceModal(unitId);
-                showToast('Harga khas berjaya dibuang', 'success');
+                showToast('✅ Julat harga khas berjaya dibuang', 'success');
             } else {
                 showToast('Ralat membuang harga khas', 'error');
             }
@@ -2783,7 +3184,7 @@ Sila sahkan tempahan ini.`;
         // Initialize
         updateTotalGuests();
     </script>
-    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9be2dbb4b0dcc0c2',t:'MTc2ODQ1MzczOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9bfb6b20a7c1ace9',t:'MTc2ODcxMTI3MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
 </body>
 
 </html>
