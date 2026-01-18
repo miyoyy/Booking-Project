@@ -686,6 +686,8 @@
         // ==================== GOOGLE SHEETS INTEGRATION ====================
         // 🔧 TUKAR URL INI DENGAN WEB APP URL ANDA DARI APPS SCRIPT
         // Contoh: 'https://script.google.com/macros/s/AKfycbxxx...xxx/exec'
+        // SECURITY WARNING: URL ini boleh dilihat oleh sesiapa sahaja (Public).
+        // Pastikan Apps Script anda tidak memulangkan data sensitif (seperti password) melalui URL ini.
         const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxJKBI-X8px7Y3qz-nQ11BbhZXhbmPUS-N9oAHCVcbsswPlZP22kXKk8U2RTCoD17ca_w/exec';
 
         // ==================== DATA STORAGE ====================
@@ -714,6 +716,7 @@
         }
 
         function processData() {
+            // Data admin kini selamat kerana password telah ditapis oleh API (Apps Script)
             units = allData.filter(d => d.type === 'unit');
             bookings = allData.filter(d => d.type === 'booking');
             admins = allData.filter(d => d.type === 'admin');
@@ -1632,6 +1635,8 @@ Sila sahkan tempahan ini.`;
             const password = document.getElementById('admin-login-password').value;
             const errorDiv = document.getElementById('login-error');
 
+            // SECURITY WARNING: Pengesahan berlaku di Client-side (Browser).
+            // Ini tidak selamat. Pengesahan sepatutnya berlaku dengan menghantar request ke Google Sheets, bukan membandingkan data di sini.
             const admin = admins.find(a => a.admin_id === id && a.admin_password === password);
 
             if (admin) {
