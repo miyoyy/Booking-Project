@@ -2047,8 +2047,14 @@ Sila sahkan tempahan ini.`;
             const booking = bookings.find(b => b.__backendId === id);
             if (!booking) return;
 
+            // Rekodkan siapa admin yang mengesahkan/menolak
+            let confirmedBy = booking.confirmed_by || '';
+            if (currentAdmin && (status === 'Disahkan' || status === 'Ditolak')) {
+                confirmedBy = currentAdmin.admin_id;
+            }
+
             setLoading(true);
-            const result = await updateRecord({ ...booking, status });
+            const result = await updateRecord({ ...booking, status, confirmed_by: confirmedBy });
             setLoading(false);
 
             if (result.isOk) {
