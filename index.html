@@ -146,9 +146,7 @@
                         </div>
                         <div class="flex gap-2"><button id="btn-booking-panel" onclick="showPanel('booking')"
                                 class="px-4 py-2 bg-white text-emerald-700 rounded-lg font-medium hover:bg-emerald-50 transition">
-                                📋 Tempahan </button> <button id="btn-admin-panel" onclick="showPanel('admin-login')"
-                                class="px-4 py-2 bg-emerald-800 text-white rounded-lg font-medium hover:bg-emerald-900 transition">
-                                🔐 Admin </button>
+                                📋 Tempahan </button>
                         </div>
                     </div>
                 </div>
@@ -679,6 +677,19 @@
                 </div>
             </div>
         </div><!-- Modals Container -->
+        <footer class="fixed bottom-0 w-full bg-gradient-to-r from-gray-800 to-gray-900 text-white py-6">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <div class="flex items-center justify-center gap-2 mb-2"><span class="text-2xl">🏡</span>
+                    <p class="font-semibold text-lg">JF Wadi Group</p>
+                </div>
+                <p class="text-gray-300 text-sm mb-3">Sistem Tempahan Penginapan</p>
+                <p id="btn-admin-panel" onclick="showPanel('admin-login')"
+                    class="px-4 py-2 text-white rounded-lg font-medium"></p>
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <p class="text-xs text-gray-500">© 2024 JF Wadi Group. Hak Cipta Terpelihara.</p>
+                </div>
+            </div>
+        </footer>
         <div id="modals-container"></div><!-- Toast Container -->
         <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
     </div>
