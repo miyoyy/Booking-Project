@@ -904,6 +904,32 @@
             }
         }
 
+                /**
+         * Hantar log aktiviti ke Google Sheets
+         */
+        async function logActivityToSheets(activity, details = '') {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes('MASUKKAN_WEB_APP_URL') || !currentAdmin) {
+                return;
+            }
+
+            try {
+                fetch(GOOGLE_SHEETS_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'logActivity',
+                        admin_id: currentAdmin.admin_id,
+                        activity: activity,
+                        details: details,
+                        timestamp: new Date().toLocaleString('ms-MY', { timeZone: 'Asia/Kuala_Lumpur' })
+                    }),
+                    redirect: 'follow'
+                }).catch(e => console.error('Log error:', e));
+            } catch (error) {
+                console.error('Ralat log aktiviti:', error);
+            }
+        }
+
         // ==================== LOCAL CRUD OPERATIONS ====================
         async function createRecord(record) {
             const newRecord = {
